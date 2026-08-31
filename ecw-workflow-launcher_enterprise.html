@@ -318,7 +318,7 @@
       display: flex;
       flex-direction: column;
       width: min(780px, calc(100vw - 32px));
-      height: min(84vh, 880px);
+      height: auto;
       min-width: min(420px, calc(100vw - 32px));
       min-height: min(320px, calc(100vh - 32px));
       max-width: calc(100vw - 32px);
@@ -363,7 +363,7 @@
     }
     .manual-tool:hover, .manual-tool:focus-visible { border-color: var(--ecw-orange); background: var(--ecw-orange-soft); outline: none; }
     .manual-full-size { margin-left: auto; color: var(--ecw-blue-deep); font-size: 11px; font-weight: 700; text-underline-offset: 3px; }
-    .manual-image-viewport { flex: 1 1 auto; min-height: 150px; overflow: auto; border: 1px solid var(--line); background: #f4f7f8; }
+    .manual-image-viewport { flex: 0 1 auto; min-height: 150px; overflow: auto; border: 1px solid var(--line); background: #f4f7f8; }
     .manual-popover-image { display: block; width: 100%; max-width: none; height: auto; background: #f4f7f8; object-fit: contain; transition: width .16s ease; }
     .manual-popover-placeholder { display: grid; width: 100%; min-height: 100%; place-items: center; padding: 24px; background: #f4f7f8; color: var(--muted); font-size: 12px; text-align: center; }
     .manual-popover-image[hidden], .manual-popover-placeholder[hidden] { display: none; }
@@ -531,8 +531,8 @@
       },
     */
     const MANUAL_REFERENCES = {
-      appointmentSearch: { preview: "https://github.com/Confluencehtmls/ecw_workflows/blob/main/GetAppts_quick.png?raw=true", pdf: "" },
-      appointmentDetails: { preview: "https://github.com/Confluencehtmls/ecw_workflows/blob/4565b77f13d8668332bb6d6ebd9ac4511ac8a5cb/GetAppt_quick.png", pdf: "" },
+      appointmentSearch: { preview: "./GetAppts_quick.png", pdf: "" },
+      appointmentDetails: { preview: "./GetAppt_quick.png", pdf: "" },
       appointmentAvailability: { preview: "", pdf: "" },
       appointmentScheduleEdit: { preview: "", pdf: "" },
       appointmentValues: { preview: "", pdf: "" },
@@ -778,6 +778,7 @@
       if (activeManualId !== id) {
         activeManualId = id;
         manualZoom = 1;
+        manualPreview.style.height = "";
         manualImageViewport.scrollTo({ top: 0, left: 0 });
       }
       manualPreviewTitle.textContent = trigger.dataset.workflow || "eCW workflow";
