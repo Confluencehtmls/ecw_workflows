@@ -324,7 +324,7 @@
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 32px);
       overflow: hidden;
-      resize: both;
+      resize: none;
       padding: 12px;
       border: 1px solid var(--line-strong);
       border-top: 4px solid var(--ecw-orange);
@@ -336,8 +336,11 @@
     .manual-popover[hidden] { display: none; }
     .manual-popover-header {
       flex: 0 0 auto;
-      margin: -4px -4px 0;
-      padding: 5px 82px 0 4px;
+      min-height: 62px;
+      margin: -12px -12px 9px;
+      padding: 15px 92px 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
       cursor: grab;
       touch-action: none;
       user-select: none;
@@ -367,20 +370,22 @@
     .manual-popover-close { position: absolute; top: 10px; right: 12px; z-index: 2; padding: 5px 8px; border: 0; background: transparent; color: var(--ecw-blue-deep); cursor: pointer; font-size: 11px; font-weight: 700; }
     .manual-popover-source { display: inline-block; flex: 0 0 auto; margin: 9px 28px 0 0; color: var(--ecw-blue-deep); font-size: 12px; font-weight: 700; text-underline-offset: 3px; }
     .manual-popover-source[hidden], .manual-popover-tools[hidden], .manual-full-size[hidden] { display: none; }
-    .manual-resize-handle { position: absolute; right: 3px; bottom: 3px; width: 26px; height: 26px; border: 0; border-radius: 2px; background: linear-gradient(135deg, transparent 0 48%, var(--ecw-orange) 49% 54%, transparent 55% 63%, var(--ecw-orange) 64% 69%, transparent 70%); cursor: nwse-resize; }
+    .manual-resize-handle { position: absolute; right: 2px; bottom: 2px; width: 34px; height: 34px; border: 0; border-radius: 2px; background: linear-gradient(135deg, transparent 0 47%, var(--ecw-orange) 48% 53%, transparent 54% 62%, var(--ecw-orange) 63% 68%, transparent 69%); cursor: nwse-resize; touch-action: none; }
     
     .bee-flight {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
-      z-index: 20;
+      z-index: 1000;
       width: 32px;
       height: 25px;
+      opacity: 0;
       pointer-events: none;
       transform: translate3d(-40px, -40px, 0);
       transform-origin: 50% 58%;
       will-change: transform;
     }
+    .bee-flight.cursor-visible { opacity: 1; }
     .bee-body { position: absolute; top: 9px; left: 5px; z-index: 2; width: 19px; height: 12px; border: 1px solid rgba(54, 43, 22, .5); border-radius: 62% 38% 42% 58%; background: linear-gradient(90deg, #e8a000 0 22%, #302b22 22% 34%, #ffc32e 34% 57%, #302b22 57% 68%, #efa904 68% 100%); box-shadow: inset 0 2px 2px rgba(255, 255, 255, .3), 0 2px 4px rgba(26, 48, 36, .2); }
     .bee-body::before { content: ""; position: absolute; top: 3px; left: -5px; width: 0; height: 0; border-top: 3px solid transparent; border-right: 6px solid #3a3021; border-bottom: 3px solid transparent; }
     .bee-head { position: absolute; top: 1px; right: -7px; width: 9px; height: 9px; border-radius: 48% 58% 55% 45%; background: #3a3021; }
@@ -392,10 +397,12 @@
     .bee-wing-left { top: -1px; left: 4px; z-index: 1; transform-origin: 86% 100%; animation: bee-wing-left .11s ease-in-out infinite alternate; }
     .bee-wing-right { top: -1px; left: 10px; z-index: 3; transform-origin: 18% 100%; animation: bee-wing-right .11s ease-in-out infinite alternate; }
     .bee-flight.resting .bee-wing { animation-duration: .8s; }
-    .bee-trail-dot { position: absolute; z-index: 19; width: var(--trail-size, 4px); height: var(--trail-size, 4px); border-radius: 50%; background: var(--ecw-orange); pointer-events: none; transform: translate(-50%, -50%); animation: bee-trail-fade .48s ease-out forwards; }
     @keyframes bee-wing-left { from { transform: rotate(-30deg) scaleY(.68); } to { transform: rotate(-12deg) scaleY(1.04); } }
     @keyframes bee-wing-right { from { transform: rotate(12deg) scaleY(.68); } to { transform: rotate(30deg) scaleY(1.04); } }
-    @keyframes bee-trail-fade { from { opacity: .65; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, calc(-50% + 7px)) scale(.25); } }
+    
+    @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+      body, body * { cursor: none !important; }
+    }
     
     @media (max-width: 1000px) {
       .workspace { padding: 14px; }
@@ -427,10 +434,10 @@
     
     @media (prefers-reduced-motion: reduce) {
       .waypoint, .index-row, .manual-popover-image { transition: none; }
-      .bee-flight, .bee-trail-dot { display: none; }
+      .bee-flight { display: none; }
     }
     @media (pointer: coarse) {
-      .bee-flight, .bee-trail-dot { display: none; }
+      .bee-flight { display: none; }
     }
   </style>
 </head>
@@ -639,18 +646,8 @@
     let manualResizeState = null;
     let manualDragState = null;
     let manualPositionLocked = false;
-    let beeX = 0;
-    let beeY = 0;
-    let beeTargetX = 0;
-    let beeTargetY = 0;
-    let beeAngle = 0;
     let beeFacing = 1;
-    let beeFrame = null;
-    let beeFollowing = false;
-    let beeInitialized = false;
-    let lastTrailTime = 0;
-    let lastTrailX = 0;
-    let lastTrailY = 0;
+    let beeCursorX = null;
 
     manualPreviewImage.addEventListener("load", () => {
       if (activeManualTrigger) positionManualPreview(activeManualTrigger);
@@ -854,13 +851,13 @@
     }
 
     function resizeManualPreview(width, height) {
-      const rect = manualPreview.getBoundingClientRect();
       const minimumWidth = Math.min(420, window.innerWidth - 32);
       const minimumHeight = Math.min(320, window.innerHeight - 32);
-      const maximumWidth = Math.max(minimumWidth, window.innerWidth - rect.left - 16);
-      const maximumHeight = Math.max(minimumHeight, window.innerHeight - rect.top - 16);
+      const maximumWidth = Math.max(minimumWidth, window.innerWidth - 32);
+      const maximumHeight = Math.max(minimumHeight, window.innerHeight - 32);
       manualPreview.style.width = `${Math.round(Math.max(minimumWidth, Math.min(width, maximumWidth)))}px`;
       manualPreview.style.height = `${Math.round(Math.max(minimumHeight, Math.min(height, maximumHeight)))}px`;
+      clampManualPreviewPosition();
     }
 
     function scheduleManualPreviewHide() {
@@ -890,75 +887,24 @@
       window.open(url, "_blank", "noopener");
     }
 
-    function beePerch() {
-      const bounds = scene.getBoundingClientRect();
-      return { x: Math.min(34, bounds.width - 36), y: 28 };
+    function updateMotionTarget() {
+      targetX = pointerX * .78 + focusX * .22;
+      targetY = pointerY * .78;
     }
 
-    function setBeeTarget(x, y, following) {
-      if (!beeMotionAllowed.matches) return;
-      const bounds = scene.getBoundingClientRect();
-      beeTargetX = Math.max(18, Math.min(x, bounds.width - 36));
-      beeTargetY = Math.max(26, Math.min(y, bounds.height - 34));
-      beeFollowing = following;
-      beeFlight.classList.toggle("resting", !following);
-      if (!beeInitialized) {
-        beeX = beeTargetX;
-        beeY = beeTargetY;
-        lastTrailX = beeX;
-        lastTrailY = beeY;
-        beeInitialized = true;
-      }
-      if (!beeFrame) beeFrame = requestAnimationFrame(animateBee);
+    function animateMotion() {
+      velocityX = (velocityX + (targetX - currentX) * .032) * .84;
+      velocityY = (velocityY + (targetY - currentY) * .032) * .84;
+      currentX += velocityX;
+      currentY += velocityY;
+      scene.style.setProperty("--mx", currentX.toFixed(3));
+      scene.style.setProperty("--my", currentY.toFixed(3));
+      if (Math.abs(targetX - currentX) > .001 || Math.abs(targetY - currentY) > .001 || Math.abs(velocityX) > .001 || Math.abs(velocityY) > .001) motionFrame = requestAnimationFrame(animateMotion);
+      else motionFrame = null;
     }
 
-    function parkBee() {
-      if (!beeInitialized) {
-        const perch = beePerch();
-        setBeeTarget(perch.x, perch.y, false);
-        return;
-      }
-      setBeeTarget(beeX, beeY, false);
-    }
-
-    function addBeeTrail(now) {
-      const distance = Math.hypot(beeX - lastTrailX, beeY - lastTrailY);
-      if (!beeFollowing || now - lastTrailTime < 46 || distance < 7) return;
-      const dot = document.createElement("span");
-      dot.className = "bee-trail-dot";
-      dot.style.left = `${beeX + 4}px`;
-      dot.style.top = `${beeY + 13}px`;
-      dot.style.setProperty("--trail-size", `${3 + Math.round(Math.random() * 2)}px`);
-      scene.insertBefore(dot, beeFlight);
-      dot.addEventListener("animationend", () => dot.remove(), { once: true });
-      lastTrailTime = now;
-      lastTrailX = beeX;
-      lastTrailY = beeY;
-    }
-
-    function animateBee(now) {
-      const dx = beeTargetX - beeX;
-      const dy = beeTargetY - beeY;
-      const previousBeeX = beeX;
-      beeX += dx * .095;
-      beeY += dy * .095;
-      const horizontalTravel = beeX - previousBeeX;
-      if (Math.abs(horizontalTravel) > .18) beeFacing = horizontalTravel < 0 ? -1 : 1;
-      const speed = Math.hypot(dx, dy);
-      if (speed > .35) {
-        const desiredAngle = Math.max(-24, Math.min(24, Math.atan2(dy, Math.abs(dx) || 1) * 24));
-        beeAngle += (desiredAngle - beeAngle) * .12;
-      } else {
-        beeAngle *= .88;
-      }
-      beeFlight.style.transform = `translate3d(${beeX.toFixed(1)}px, ${beeY.toFixed(1)}px, 0) rotate(${beeAngle.toFixed(1)}deg) scaleX(${beeFacing})`;
-      addBeeTrail(now);
-      if (speed > .35) beeFrame = requestAnimationFrame(animateBee);
-      else beeFrame = null;
-    }
-
-    function pointerIsOverWorkSurface(target) {
-      return target instanceof Element && Boolean(target.closest(".waypoints, .hero, .drawer, .manual-popover"));
+    function requestMotion() {
+      if (!motionFrame) motionFrame = requestAnimationFrame(animateMotion);
     }
 
     scene.addEventListener("pointerleave", event => {
@@ -970,16 +916,15 @@
 
     document.addEventListener("pointermove", event => {
       if (event.pointerType === "touch" || !beeMotionAllowed.matches) return;
-      const bounds = scene.getBoundingClientRect();
-      const insideScene = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
-      if (!insideScene || pointerIsOverWorkSurface(event.target)) {
-        parkBee();
-        return;
-      }
-      setBeeTarget(event.clientX - bounds.left + 24, event.clientY - bounds.top - 18, true);
+      if (beeCursorX !== null && Math.abs(event.clientX - beeCursorX) > .5) beeFacing = event.clientX < beeCursorX ? -1 : 1;
+      beeCursorX = event.clientX;
+      beeFlight.classList.remove("resting");
+      beeFlight.classList.add("cursor-visible");
+      beeFlight.style.transform = `translate3d(${Math.round(event.clientX - 16)}px, ${Math.round(event.clientY - 12)}px, 0) scaleX(${beeFacing})`;
     }, { passive: true });
 
-    window.addEventListener("blur", parkBee);
+    document.documentElement.addEventListener("mouseleave", () => beeFlight.classList.remove("cursor-visible"));
+    window.addEventListener("blur", () => beeFlight.classList.remove("cursor-visible"));
 
     waypoints.addEventListener("pointerover", event => {
       const button = event.target.closest("[data-category]");
@@ -1097,7 +1042,7 @@
     });
 
     manualDragHandle.addEventListener("pointerdown", event => {
-      if (window.innerWidth <= 760 || event.button !== 0) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
       clearTimeout(manualHideTimer);
       manualPinned = true;
       manualPositionLocked = true;
@@ -1124,7 +1069,16 @@
     manualDragHandle.addEventListener("pointerup", event => {
       if (!manualDragState) return;
       manualDragState = null;
-      manualDragHandle.releasePointerCapture(event.pointerId);
+      if (manualDragHandle.hasPointerCapture(event.pointerId)) manualDragHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualDragHandle.addEventListener("pointercancel", event => {
+      manualDragState = null;
+      if (manualDragHandle.hasPointerCapture(event.pointerId)) manualDragHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualDragHandle.addEventListener("lostpointercapture", () => {
+      manualDragState = null;
     });
 
     manualDragHandle.addEventListener("keydown", event => {
@@ -1141,7 +1095,7 @@
     });
 
     manualResizeHandle.addEventListener("pointerdown", event => {
-      if (event.pointerType === "touch") return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
       clearTimeout(manualHideTimer);
       manualPinned = true;
       manualPositionLocked = true;
@@ -1163,7 +1117,16 @@
     manualResizeHandle.addEventListener("pointerup", event => {
       if (!manualResizeState) return;
       manualResizeState = null;
-      manualResizeHandle.releasePointerCapture(event.pointerId);
+      if (manualResizeHandle.hasPointerCapture(event.pointerId)) manualResizeHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualResizeHandle.addEventListener("pointercancel", event => {
+      manualResizeState = null;
+      if (manualResizeHandle.hasPointerCapture(event.pointerId)) manualResizeHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualResizeHandle.addEventListener("lostpointercapture", () => {
+      manualResizeState = null;
     });
 
     manualResizeHandle.addEventListener("keydown", event => {
@@ -1201,11 +1164,9 @@
 
     window.addEventListener("resize", () => {
       if (activeManualTrigger) positionManualPreview(activeManualTrigger);
-      if (!beeFollowing) parkBee();
     });
 
     render();
-    parkBee();
     document.documentElement.classList.add("app-ready");
   </script>
 </body>
