@@ -45,7 +45,10 @@
       padding: 64px 18px 18px;
       overflow: hidden;
       background: var(--canvas);
+      visibility: hidden;
     }
+    
+    html.app-ready .workspace { visibility: visible; }
     
     .app-shell {
       position: relative;
@@ -751,7 +754,6 @@
       pinnedCategoryId = categoryId;
       previewCategoryId = null;
       search.value = "";
-      history.replaceState(null, "", `#${pinnedCategoryId}`);
       if (changed) render();
     }
 
@@ -759,7 +761,6 @@
       pinnedCategoryId = null;
       previewCategoryId = null;
       search.value = "";
-      history.replaceState(null, "", location.pathname + location.search);
       render();
     }
 
@@ -1205,6 +1206,7 @@
 
     render();
     parkBee();
+    document.documentElement.classList.add("app-ready");
   </script>
 </body>
 </html>
