@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Enterprise eClinicalWorks endpoint workflow guide.">
+  <title>eCW Endpoint Workflows | Enterprise</title>
+  <style>
+    :root {
+      --ecw-blue: #111111;
+      --ecw-blue-deep: #111111;
+      --ecw-blue-soft: #83e3d1;
+      --ecw-orange: #ffc400;
+      --ecw-orange-soft: #fff1a6;
+      --ink: #171717;
+      --ink-strong: #000000;
+      --muted: #656565;
+      --line: #e2e2df;
+      --line-strong: #c9c9c4;
+      --surface: #ffffff;
+      --canvas: #ffffff;
+      --shadow: none;
+    }
+    
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+    }
+    button, input { font: inherit; }
+    a { color: inherit; }
+    button:focus-visible, input:focus-visible, a:focus-visible, [role="link"]:focus-visible {
+      outline: 3px solid #83e3d1;
+      outline-offset: 2px;
+    }
+    
+    .workspace {
+      position: relative;
+      min-height: 100svh;
+      padding: 64px 18px 18px;
+      overflow: hidden;
+      background: var(--canvas);
+    }
+    
+    .app-shell {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    
+    .hero {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      z-index: 8;
+      width: min(380px, calc(100% - 36px));
+      margin: 0;
+    }
+    .search-wrap { position: relative; width: 100%; }
+    .search {
+      width: 100%;
+      height: 44px;
+      padding: 0 118px 0 42px;
+      border: 1px solid #111;
+      border-radius: 5px;
+      background: #fff;
+      color: var(--ink-strong);
+      box-shadow: inset 0 1px 2px rgba(31, 55, 69, .04);
+    }
+    .search:hover { border-color: #000; }
+    .search:focus { border-color: #000; outline: 3px solid rgba(131, 227, 209, .45); }
+    .search::placeholder { color: #7f939e; }
+    .search-key {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      width: 17px;
+      height: 17px;
+      color: #6f8996;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+    .search-key svg { display: block; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+    .search-feedback {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      max-width: 100px;
+      padding-left: 10px;
+      overflow: hidden;
+      border-left: 1px solid #d7d7d2;
+      background: #fff;
+      color: #494946;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 18px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+    .search-feedback[hidden] { display: none; }
+    
+    .navigation-bar {
+      display: block;
+      padding: 0;
+      border-bottom: 1px solid #111;
+      background: #fff;
+    }
+    .waypoints {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .waypoint {
+      position: relative;
+      min-height: 64px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: center;
+      transition: background-color .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
+    }
+    .waypoint + .waypoint::before {
+      content: "";
+      position: absolute;
+      top: 14px;
+      bottom: 14px;
+      left: -2px;
+      width: 1px;
+      background: #d8d8d4;
+    }
+    .waypoint.active::before, .waypoint:hover::before, .waypoint:has(+ .waypoint.active)::before, .waypoint:has(+ .waypoint:hover)::before { display: none; }
+    .waypoint:hover {
+      background: #fff1ad;
+      color: #000;
+      box-shadow: none;
+    }
+    .waypoint.active {
+      background: #FEB206;
+      color: #000;
+      box-shadow: none;
+    }
+    .waypoint-name {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    
+    .drawer {
+      position: relative;
+      width: min(1720px, 100%);
+      min-height: 0;
+      margin: 0 auto;
+      max-height: calc(100svh - 108px);
+      overflow: auto;
+      background: #fff;
+    }
+    .drawer[hidden] { display: none; }
+    .index-head {
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) minmax(420px, 1.1fr) 140px;
+      gap: 28px;
+      margin-top: 18px;
+      padding: 11px 22px;
+      border-radius: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .index-head span:last-child { text-align: center; }
+    .index-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 0 12px;
+    }
+    .index-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(360px, .9fr) minmax(420px, 1.1fr) 140px;
+      grid-template-rows: 1fr;
+      align-items: center;
+      gap: 28px;
+      min-height: 98px;
+      margin: 0;
+      padding: 16px 22px;
+      overflow: hidden;
+      border: 1px solid #deded9;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      transition: background-color .14s ease;
+    }
+    .index-row:hover, .index-row:focus-within, .index-row:focus-visible {
+      border-color: #111;
+      background: #d6f5ee;
+      outline: none;
+    }
+    .endpoint {
+      grid-column: 1;
+      overflow-wrap: anywhere;
+      color: #1b1b1b;
+      font-family: "Roboto Mono", "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.55;
+    }
+    .result-category {
+      display: block;
+      margin-top: 5px;
+      color: #7a8f9a;
+      font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5px;
+      font-weight: 400;
+    }
+    .workflow {
+      display: block;
+      color: #000;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -.015em;
+      line-height: 1.2;
+    }
+    .inspect { display: block; margin-top: 6px; color: #5f5f5b; font-size: 13px; line-height: 1.4; }
+    .workflow-block {
+      grid-column: 2;
+      align-self: center;
+      padding: 0;
+      border: 0;
+    }
+    .index-arrow {
+      display: none;
+      width: auto;
+      height: auto;
+      border: 0;
+      color: #718c99;
+      font-size: 18px;
+      line-height: 1;
+      text-align: center;
+    }
+    .index-row:hover .index-arrow { color: #000; }
+    .index-row.missing .index-arrow { display: none; }
+    .no-results { padding: 46px 24px; color: var(--muted); font-size: 12px; text-align: center; }
+    .search-mark { padding: 0 2px; border-radius: 2px; background: #fff1ad; color: #111; }
+    
+    .manual-trigger {
+      grid-column: 3;
+      justify-self: center;
+      min-width: 118px;
+      padding: 9px 13px;
+      border: 0;
+      border-radius: 4px;
+      background: #000;
+      color: #fff;
+      cursor: help;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .manual-trigger:hover, .manual-trigger:focus-visible {
+      background: #ffc400;
+      color: #000;
+    }
+    .manual-trigger-icon {
+      display: inline-block;
+      margin-left: 7px;
+      font-size: 14px;
+      line-height: 1;
+      vertical-align: -1px;
+    }
+    
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 90;
+      display: none;
+      padding: 11px 14px;
+      border-left: 4px solid var(--ecw-orange);
+      border-radius: 3px;
+      background: var(--ink-strong);
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(16, 43, 57, .2);
+      font-size: 11px;
+    }
+    .toast.visible { display: block; }
+    
+    .manual-popover {
+      position: fixed;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      width: min(780px, calc(100vw - 32px));
+      height: min(84vh, 880px);
+      min-width: min(420px, calc(100vw - 32px));
+      min-height: min(320px, calc(100vh - 32px));
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 32px);
+      overflow: hidden;
+      resize: both;
+      padding: 12px;
+      border: 1px solid var(--line-strong);
+      border-top: 4px solid var(--ecw-orange);
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 24px 64px rgba(16, 43, 57, .24);
+      pointer-events: auto;
+    }
+    .manual-popover[hidden] { display: none; }
+    .manual-popover-header {
+      flex: 0 0 auto;
+      margin: -4px -4px 0;
+      padding: 5px 82px 0 4px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+    .manual-popover-header:active { cursor: grabbing; }
+    .manual-popover-header:focus-visible { border-radius: 3px; outline: 2px solid var(--ecw-orange); outline-offset: 1px; }
+    .manual-popover-label { color: #a34f09; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .manual-popover-title { display: block; margin: 3px 0 10px; color: var(--ink-strong); font-size: 16px; font-weight: 700; }
+    .manual-popover-tools { display: flex; align-items: center; gap: 5px; margin: 0 0 9px; }
+    .manual-tool {
+      min-width: 31px;
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 3px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font: 700 11px/1 Arial, Helvetica, sans-serif;
+    }
+    .manual-tool:hover, .manual-tool:focus-visible { border-color: var(--ecw-orange); background: var(--ecw-orange-soft); outline: none; }
+    .manual-full-size { margin-left: auto; color: var(--ecw-blue-deep); font-size: 11px; font-weight: 700; text-underline-offset: 3px; }
+    .manual-image-viewport { flex: 1 1 auto; min-height: 150px; overflow: auto; border: 1px solid var(--line); background: #f4f7f8; }
+    .manual-popover-image { display: block; width: 100%; max-width: none; height: auto; background: #f4f7f8; object-fit: contain; transition: width .16s ease; }
+    .manual-popover-placeholder { display: grid; width: 100%; min-height: 100%; place-items: center; padding: 24px; background: #f4f7f8; color: var(--muted); font-size: 12px; text-align: center; }
+    .manual-popover-image[hidden], .manual-popover-placeholder[hidden] { display: none; }
+    .manual-popover-close { position: absolute; top: 10px; right: 12px; z-index: 2; padding: 5px 8px; border: 0; background: transparent; color: var(--ecw-blue-deep); cursor: pointer; font-size: 11px; font-weight: 700; }
+    .manual-popover-source { display: inline-block; flex: 0 0 auto; margin: 9px 28px 0 0; color: var(--ecw-blue-deep); font-size: 12px; font-weight: 700; text-underline-offset: 3px; }
+    .manual-popover-source[hidden], .manual-popover-tools[hidden], .manual-full-size[hidden] { display: none; }
+    .manual-resize-handle { position: absolute; right: 3px; bottom: 3px; width: 26px; height: 26px; border: 0; border-radius: 2px; background: linear-gradient(135deg, transparent 0 48%, var(--ecw-orange) 49% 54%, transparent 55% 63%, var(--ecw-orange) 64% 69%, transparent 70%); cursor: nwse-resize; }
+    
+    .bee-flight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 20;
+      width: 32px;
+      height: 25px;
+      pointer-events: none;
+      transform: translate3d(-40px, -40px, 0);
+      transform-origin: 50% 58%;
+      will-change: transform;
+    }
+    .bee-body { position: absolute; top: 9px; left: 5px; z-index: 2; width: 19px; height: 12px; border: 1px solid rgba(54, 43, 22, .5); border-radius: 62% 38% 42% 58%; background: linear-gradient(90deg, #e8a000 0 22%, #302b22 22% 34%, #ffc32e 34% 57%, #302b22 57% 68%, #efa904 68% 100%); box-shadow: inset 0 2px 2px rgba(255, 255, 255, .3), 0 2px 4px rgba(26, 48, 36, .2); }
+    .bee-body::before { content: ""; position: absolute; top: 3px; left: -5px; width: 0; height: 0; border-top: 3px solid transparent; border-right: 6px solid #3a3021; border-bottom: 3px solid transparent; }
+    .bee-head { position: absolute; top: 1px; right: -7px; width: 9px; height: 9px; border-radius: 48% 58% 55% 45%; background: #3a3021; }
+    .bee-head::before, .bee-head::after { content: ""; position: absolute; top: -4px; width: 5px; height: 5px; border-top: 1px solid #3a3021; border-radius: 50%; }
+    .bee-head::before { left: 2px; transform: rotate(-24deg); }
+    .bee-head::after { right: -1px; transform: rotate(18deg); }
+    .bee-eye { position: absolute; top: 2px; right: 1px; width: 2px; height: 2px; border-radius: 50%; background: #fff5cf; }
+    .bee-wing { position: absolute; width: 13px; height: 11px; border: 1px solid rgba(48, 132, 155, .28); border-radius: 68% 48% 66% 44%; background: rgba(121, 200, 223, .9); }
+    .bee-wing-left { top: -1px; left: 4px; z-index: 1; transform-origin: 86% 100%; animation: bee-wing-left .11s ease-in-out infinite alternate; }
+    .bee-wing-right { top: -1px; left: 10px; z-index: 3; transform-origin: 18% 100%; animation: bee-wing-right .11s ease-in-out infinite alternate; }
+    .bee-flight.resting .bee-wing { animation-duration: .8s; }
+    .bee-trail-dot { position: absolute; z-index: 19; width: var(--trail-size, 4px); height: var(--trail-size, 4px); border-radius: 50%; background: var(--ecw-orange); pointer-events: none; transform: translate(-50%, -50%); animation: bee-trail-fade .48s ease-out forwards; }
+    @keyframes bee-wing-left { from { transform: rotate(-30deg) scaleY(.68); } to { transform: rotate(-12deg) scaleY(1.04); } }
+    @keyframes bee-wing-right { from { transform: rotate(12deg) scaleY(.68); } to { transform: rotate(30deg) scaleY(1.04); } }
+    @keyframes bee-trail-fade { from { opacity: .65; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, calc(-50% + 7px)) scale(.25); } }
+    
+    @media (max-width: 1000px) {
+      .workspace { padding: 14px; }
+      .workspace { padding-top: 66px; }
+      .hero { top: 12px; right: 14px; width: min(380px, calc(100% - 28px)); }
+      .waypoints { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .drawer { max-height: none; }
+      .index-head,
+      .index-row { grid-template-columns: minmax(250px, .85fr) minmax(300px, 1.15fr) 124px; gap: 18px; }
+    }
+    
+    @media (max-width: 720px) {
+      .workspace { padding: 64px 8px 8px; overflow: visible; }
+      .navigation-bar { padding: 8px; }
+      .hero { width: 100%; }
+      .waypoint { min-height: 54px; padding: 9px; }
+      .waypoint-name { font-size: 13px; }
+      .drawer { max-height: none; overflow: visible; }
+      .index-head { display: none; }
+      .index-links { padding-top: 12px; }
+      .index-row { grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 8px 12px; min-height: 132px; padding: 14px; }
+      .endpoint { grid-column: 1 / -1; }
+      .workflow-block { grid-column: 1; }
+      .manual-trigger { grid-column: 2; grid-row: 2; }
+      .manual-popover { width: calc(100vw - 20px); height: calc(100vh - 20px); min-width: 0; min-height: 280px; max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); resize: none; }
+      .manual-popover-header { cursor: default; touch-action: auto; }
+      .manual-resize-handle { display: none; }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .waypoint, .index-row, .manual-popover-image { transition: none; }
+      .bee-flight, .bee-trail-dot { display: none; }
+    }
+    @media (pointer: coarse) {
+      .bee-flight, .bee-trail-dot { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="workspace" id="scene">
+    <div class="bee-flight resting" id="beeFlight" aria-hidden="true">
+      <span class="bee-wing bee-wing-left"></span>
+      <span class="bee-wing bee-wing-right"></span>
+      <span class="bee-body"><span class="bee-head"><span class="bee-eye"></span></span></span>
+    </div>
+
+    <header class="hero">
+      <div class="search-wrap">
+        <input class="search" id="endpointSearch" type="search" aria-label="Search endpoints and eCW workflows" placeholder="Search endpoint or eCW workflow" autocomplete="off">
+        <span class="search-key" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5.5"></circle><path d="m12.5 12.5 4 4"></path></svg></span>
+        <span class="search-feedback" id="searchFeedback" role="status" aria-live="polite" hidden></span>
+      </div>
+    </header>
+
+    <section class="app-shell" aria-label="eCW endpoint workflow index">
+      <div class="navigation-bar">
+        <nav class="waypoints" id="waypoints" aria-label="Workflow categories"></nav>
+      </div>
+      <section class="drawer" id="drawer" aria-live="polite" hidden></section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="manual-popover" id="manualPreview" role="dialog" aria-label="eCW manual preview" hidden>
+    <button class="manual-popover-close" id="manualPreviewClose" type="button">Close</button>
+    <div class="manual-popover-header" id="manualDragHandle" tabindex="0" aria-label="Move manual preview">
+      <div class="manual-popover-label">eCW Manual</div>
+      <strong class="manual-popover-title" id="manualPreviewTitle"></strong>
+    </div>
+    <div class="manual-popover-tools" id="manualPreviewTools" hidden>
+      <button class="manual-tool" type="button" data-manual-zoom="-0.25" aria-label="Zoom out">-</button>
+      <button class="manual-tool" id="manualZoomReset" type="button" aria-label="Reset zoom">100%</button>
+      <button class="manual-tool" type="button" data-manual-zoom="0.25" aria-label="Zoom in">+</button>
+      <a class="manual-full-size" id="manualPreviewFullSize" target="_blank" rel="noopener" hidden>Open full size</a>
+    </div>
+    <div class="manual-image-viewport" id="manualImageViewport">
+      <img class="manual-popover-image" id="manualPreviewImage" alt="" hidden>
+      <div class="manual-popover-placeholder" id="manualPreviewPlaceholder">Manual screenshot preview has not been added yet.</div>
+    </div>
+    <a class="manual-popover-source" id="manualPreviewSource" target="_blank" rel="noopener" hidden>Open source manual</a>
+    <button class="manual-resize-handle" id="manualResizeHandle" type="button" aria-label="Resize manual preview"></button>
+  </div>
+
+  <script>
+    /*
+      LINK CONFIGURATION
+
+      Clicking a workflow row opens the matching ARTICLE_LINKS value.
+      Replace each empty string with the published Confluence workflow page URL.
+
+      Copy/paste example:
+      appointmentSearch: "https://YOUR-SITE.atlassian.net/wiki/spaces/SPACE/pages/123456/Appointment+Search",
+    */
+    const ARTICLE_LINKS = {
+      appointmentSearch: "",
+      appointmentDetails: "",
+      appointmentAvailability: "",
+      appointmentScheduleEdit: "",
+      appointmentValues: "",
+      patientBalance: "",
+      patientClaims: "",
+      patientPayments: "",
+      billingAlerts: "",
+      collectionBuckets: "",
+      encounterList: "",
+      progressNotes: "",
+      encounterMaintenance: "",
+      questionnaires: "",
+      patientLookup: "",
+      patientInformation: "",
+      guarantor: "",
+      updatedPatients: "",
+      demographicValues: ""
+    };
+
+    /*
+      The eCW Manual button uses MANUAL_REFERENCES:
+      - preview: Direct Confluence attachment URL for a PNG, JPG, or WEBP screenshot.
+      - pdf: Direct Confluence attachment URL for the source PDF. This becomes the "Open source manual" link.
+      Either value can remain empty.
+
+      Copy/paste example:
+      appointmentSearch: {
+        preview: "https://YOUR-SITE.atlassian.net/wiki/download/attachments/123456/appointment-search.png",
+        pdf: "https://YOUR-SITE.atlassian.net/wiki/download/attachments/123456/ecw-scheduling-manual.pdf"
+      },
+    */
+    const MANUAL_REFERENCES = {
+      appointmentSearch: { preview: "", pdf: "" },
+      appointmentDetails: { preview: "", pdf: "" },
+      appointmentAvailability: { preview: "", pdf: "" },
+      appointmentScheduleEdit: { preview: "", pdf: "" },
+      appointmentValues: { preview: "", pdf: "" },
+      patientBalance: { preview: "", pdf: "" },
+      patientClaims: { preview: "", pdf: "" },
+      patientPayments: { preview: "", pdf: "" },
+      billingAlerts: { preview: "", pdf: "" },
+      collectionBuckets: { preview: "", pdf: "" },
+      encounterList: { preview: "", pdf: "" },
+      progressNotes: { preview: "", pdf: "" },
+      encounterMaintenance: { preview: "", pdf: "" },
+      questionnaires: { preview: "", pdf: "" },
+      patientLookup: { preview: "", pdf: "" },
+      patientInformation: { preview: "file:///C:/Users/BRIAN~1.NEV/AppData/Local/Temp/codex-clipboard-a1d2d80d-85e7-4a18-8d6f-ea659ed71eb6.png", pdf: "" },
+      guarantor: { preview: "", pdf: "" },
+      updatedPatients: { preview: "", pdf: "" },
+      demographicValues: { preview: "", pdf: "" }
+    };
+
+    const categories = [
+      {
+        id: "appointments",
+        label: "Appointments",
+        shortPath: "Schedule",
+        path: "eCW: Schedule",
+        links: [
+          ["appointmentSearch", "GetAppointments / BeginSearchAppointments / NextSearchAppointments", "Appointment search", "Appointment list, filters, and result paging."],
+          ["appointmentDetails", "GetAppointment", "Appointment details", "Selected appointment fields and identifiers."],
+          ["appointmentAvailability", "GetScheduleAppointmentTypes / GetOpenAppointmentSlots / GetAppointmentSlot", "Open appointment slots", "Scheduling types, availability, and slot details."],
+          ["appointmentScheduleEdit", "ScheduleAppointment / EditAppointment", "Schedule or edit an appointment", "Fields entered or changed before saving."],
+          ["appointmentValues", "GetAppointmentTypes / GetAppointmentStatuses", "Appointment values", "Type and status lists available in eCW."]
+        ]
+      },
+      {
+        id: "payments",
+        label: "Balances / Payments",
+        shortPath: "Account Inquiry",
+        path: "eCW: Patient Hub > Account Inquiry",
+        links: [
+          ["patientBalance", "GetAccount / GetBalance / GetBalanceSummary", "Patient account and balance", "Account balance, patient balance, and summary fields."],
+          ["patientClaims", "BeginSearchClaims / NextSearchClaims", "Patient claims", "Claim filters, result rows, and paging."],
+          ["patientPayments", "ApplyPayment / VoidPayment", "Apply or void a payment", "Payment entry and payment history."],
+          ["billingAlerts", "GetBillingAlert / UpdateBillingAlert", "Billing alerts", "Current alert and update controls."],
+          ["collectionBuckets", "GetPatientCollectionBuckets / UpdatePatientCollectionBucket", "Collection buckets", "Assigned bucket and available bucket values."]
+        ]
+      },
+      {
+        id: "progress-notes",
+        label: "Progress Notes / Questionnaires",
+        shortPath: "Progress Notes",
+        path: "eCW: Patient Hub > Progress Notes",
+        links: [
+          ["encounterList", "GetEncounters", "Encounter list", "Encounter dates, providers, and identifiers."],
+          ["progressNotes", "GetEncounterNotes / GetEncounterNoteBody", "Progress notes", "Note list, note sections, and note content."],
+          ["encounterMaintenance", "CreateEncounter / CloseEncounter", "Create or close an encounter", "Fields required to open or close an encounter."],
+          ["questionnaires", "Questionnaire workflows", "Questionnaires", "Questionnaire navigation, answers, and field mapping."]
+        ]
+      },
+      {
+        id: "demographics",
+        label: "Demographics",
+        shortPath: "Patient Information",
+        path: "eCW: Patient Hub > Patient Information",
+        links: [
+          ["patientLookup", "SmartSearch", "Patient Lookup", "Search fields and patient selection."],
+          ["patientInformation", "GetPatient", "Patient Information window", "Demographics, identifiers, contacts, and profile fields."],
+          ["guarantor", "GetGuarantor", "Guarantor information", "Guarantor identity, relationship, and contact fields."],
+          ["updatedPatients", "BeginGetUpdatedPatients / NextGetUpdatedPatients", "Updated patient search", "Update window and result paging."],
+          ["demographicValues", "GetEthnicities / GetGenderIdentities / GetLanguages / GetMaritalStatuses / GetRaces / GetRelationships / GetSexualOrientations", "Demographic reference values", "Dropdown values shown in Patient Information."]
+        ]
+      }
+    ];
+
+    const scene = document.getElementById("scene");
+    const hero = document.querySelector(".hero");
+    const waypoints = document.getElementById("waypoints");
+    const drawer = document.getElementById("drawer");
+    const search = document.getElementById("endpointSearch");
+    const searchFeedback = document.getElementById("searchFeedback");
+    const manualPreview = document.getElementById("manualPreview");
+    const manualPreviewTitle = document.getElementById("manualPreviewTitle");
+    const manualPreviewImage = document.getElementById("manualPreviewImage");
+    const manualPreviewPlaceholder = document.getElementById("manualPreviewPlaceholder");
+    const manualPreviewClose = document.getElementById("manualPreviewClose");
+    const manualPreviewSource = document.getElementById("manualPreviewSource");
+    const manualPreviewTools = document.getElementById("manualPreviewTools");
+    const manualZoomReset = document.getElementById("manualZoomReset");
+    const manualPreviewFullSize = document.getElementById("manualPreviewFullSize");
+    const manualImageViewport = document.getElementById("manualImageViewport");
+    const manualResizeHandle = document.getElementById("manualResizeHandle");
+    const manualDragHandle = document.getElementById("manualDragHandle");
+    const beeFlight = document.getElementById("beeFlight");
+    const beeMotionAllowed = window.matchMedia("(pointer: fine) and (prefers-reduced-motion: no-preference)");
+    manualPreviewImage.addEventListener("error", () => {
+      manualPreviewImage.hidden = true;
+      manualPreviewPlaceholder.textContent = "The manual screenshot could not be loaded.";
+      manualPreviewPlaceholder.hidden = false;
+      manualPreviewTools.hidden = true;
+      manualPreviewFullSize.removeAttribute("href");
+      manualPreviewFullSize.hidden = true;
+      if (activeManualTrigger) positionManualPreview(activeManualTrigger);
+    });
+    let pinnedCategoryId = validHash() || "appointments";
+    let previewCategoryId = null;
+    let toastTimer;
+    let manualHideTimer;
+    let manualPinned = false;
+    let activeManualTrigger = null;
+    let activeManualId = null;
+    let manualZoom = 1;
+    let manualResizeState = null;
+    let manualDragState = null;
+    let manualPositionLocked = false;
+    let beeX = 0;
+    let beeY = 0;
+    let beeTargetX = 0;
+    let beeTargetY = 0;
+    let beeAngle = 0;
+    let beeFacing = 1;
+    let beeFrame = null;
+    let beeFollowing = false;
+    let beeInitialized = false;
+    let lastTrailTime = 0;
+    let lastTrailX = 0;
+    let lastTrailY = 0;
+
+    manualPreviewImage.addEventListener("load", () => {
+      if (activeManualTrigger) positionManualPreview(activeManualTrigger);
+    });
+
+    function validHash() {
+      const hash = location.hash.replace(/^#/, "");
+      return categories.some(category => category.id === hash) ? hash : null;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+      })[character]);
+    }
+
+    function highlightText(value, query) {
+      const text = String(value);
+      if (!query) return escapeHtml(text);
+      const matchIndex = text.toLowerCase().indexOf(query.toLowerCase());
+      if (matchIndex < 0) return escapeHtml(text);
+      const before = escapeHtml(text.slice(0, matchIndex));
+      const match = escapeHtml(text.slice(matchIndex, matchIndex + query.length));
+      const after = escapeHtml(text.slice(matchIndex + query.length));
+      return `${before}<mark class="search-mark">${match}</mark>${after}`;
+    }
+
+    function activeCategoryId() {
+      return previewCategoryId || pinnedCategoryId;
+    }
+
+    function linkMarkup(id, endpoint, workflow, inspect, categoryLabel, query = "") {
+      const configured = Boolean(ARTICLE_LINKS[id]);
+      return `<div class="index-row ${configured ? "" : "missing"}" data-row data-article="${id}" role="link" tabindex="0" aria-label="Open ${escapeHtml(workflow)} workflow page">
+        <span class="endpoint">${highlightText(endpoint, query)}${categoryLabel ? `<span class="result-category">${highlightText(categoryLabel, query)}</span>` : ""}</span>
+        <span class="workflow-block"><span class="workflow">${highlightText(workflow, query)}</span><span class="inspect">${highlightText(inspect, query)}</span></span>
+        <button class="manual-trigger" type="button" data-manual="${id}" data-workflow="${escapeHtml(workflow)}" aria-label="Preview eCW manual for ${escapeHtml(workflow)}">eCW Manual<span class="manual-trigger-icon" aria-hidden="true">&rarr;</span></button>
+        <span class="index-arrow">›</span>
+      </div>`;
+    }
+
+    function renderWaypoints() {
+      const activeId = activeCategoryId();
+      if (!waypoints.children.length) {
+        waypoints.innerHTML = categories.map(category => `<button class="waypoint" type="button" data-category="${category.id}" aria-controls="drawer" aria-expanded="false"><span class="waypoint-name">${escapeHtml(category.label)}</span></button>`).join("");
+      }
+      waypoints.querySelectorAll("[data-category]").forEach(button => {
+        const active = button.dataset.category === activeId;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-expanded", String(active));
+      });
+    }
+
+    function renderDrawer() {
+      const query = search.value.trim().toLowerCase();
+      const categoryId = activeCategoryId();
+      searchFeedback.hidden = !query;
+      searchFeedback.textContent = "";
+      if (!query && !categoryId) {
+        hideManualPreview(true);
+        drawer.hidden = true;
+        drawer.removeAttribute("data-align");
+        hero.removeAttribute("data-align");
+        drawer.innerHTML = "";
+        return;
+      }
+
+      let title;
+      let path;
+      let links;
+
+      if (query) {
+        const results = categories.flatMap(category => category.links
+          .filter(([, endpoint, workflow, inspect]) => `${category.label} ${endpoint} ${workflow} ${inspect}`.toLowerCase().includes(query))
+          .map(link => ({ category, link })));
+        searchFeedback.textContent = `${results.length} workflow${results.length === 1 ? "" : "s"}`;
+        title = "Search results";
+        path = `${results.length} workflow${results.length === 1 ? "" : "s"}`;
+        links = results.length ? results.map(result => linkMarkup(...result.link, result.category.label, query)).join("") : '<div class="no-results">No endpoint or eCW workflow matches this search.</div>';
+      } else {
+        const category = categories.find(item => item.id === categoryId);
+        title = category.label;
+        path = category.path;
+        links = category.links.map(link => linkMarkup(...link)).join("");
+      }
+
+      drawer.dataset.align = query ? "search" : categoryId;
+      hero.dataset.align = query ? "search" : categoryId;
+      hideManualPreview(true);
+      drawer.innerHTML = `<div class="index-head"><span>API endpoint</span><span>eCW workflow</span><span>eCW reference</span></div><div class="index-links">${links}</div>`;
+      drawer.hidden = false;
+    }
+
+    function render() {
+      renderWaypoints();
+      renderDrawer();
+    }
+
+    function selectCategory(categoryId) {
+      const changed = pinnedCategoryId !== categoryId || Boolean(previewCategoryId) || Boolean(search.value);
+      pinnedCategoryId = categoryId;
+      previewCategoryId = null;
+      search.value = "";
+      history.replaceState(null, "", `#${pinnedCategoryId}`);
+      if (changed) render();
+    }
+
+    function closeDrawer() {
+      pinnedCategoryId = null;
+      previewCategoryId = null;
+      search.value = "";
+      history.replaceState(null, "", location.pathname + location.search);
+      render();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2200);
+    }
+
+    function showManualPreview(trigger) {
+      if (manualPinned && activeManualTrigger && activeManualTrigger !== trigger) return;
+      clearTimeout(manualHideTimer);
+      activeManualTrigger = trigger;
+      const id = trigger.dataset.manual;
+      const reference = MANUAL_REFERENCES[id] || { preview: "", pdf: "" };
+      if (activeManualId !== id) {
+        activeManualId = id;
+        manualZoom = 1;
+        manualImageViewport.scrollTo({ top: 0, left: 0 });
+      }
+      manualPreviewTitle.textContent = trigger.dataset.workflow || "eCW workflow";
+
+      if (reference.preview) {
+        manualPreviewImage.src = reference.preview;
+        manualPreviewImage.alt = `${manualPreviewTitle.textContent} manual screenshot`;
+        manualPreviewImage.hidden = false;
+        manualPreviewPlaceholder.hidden = true;
+        manualPreviewTools.hidden = false;
+        manualPreviewFullSize.href = reference.preview;
+        manualPreviewFullSize.hidden = false;
+        applyManualZoom();
+      } else {
+        manualPreviewImage.hidden = true;
+        manualPreviewImage.removeAttribute("src");
+        manualPreviewPlaceholder.textContent = "Manual screenshot preview has not been added yet.";
+        manualPreviewPlaceholder.hidden = false;
+        manualPreviewTools.hidden = true;
+        manualPreviewFullSize.removeAttribute("href");
+        manualPreviewFullSize.hidden = true;
+      }
+
+      if (reference.pdf) {
+        manualPreviewSource.href = reference.pdf;
+        manualPreviewSource.hidden = false;
+      } else {
+        manualPreviewSource.removeAttribute("href");
+        manualPreviewSource.hidden = true;
+      }
+
+      manualPreview.hidden = false;
+      positionManualPreview(trigger);
+    }
+
+    function applyManualZoom() {
+      manualZoom = Math.max(.75, Math.min(2, manualZoom));
+      manualPreviewImage.style.width = `${Math.round(manualZoom * 100)}%`;
+      manualZoomReset.textContent = `${Math.round(manualZoom * 100)}%`;
+      if (activeManualTrigger) requestAnimationFrame(() => positionManualPreview(activeManualTrigger));
+    }
+
+    function positionManualPreview(trigger) {
+      if (!trigger || manualPreview.hidden) return;
+      if (manualPositionLocked) {
+        clampManualPreviewPosition();
+        return;
+      }
+      const triggerRect = trigger.getBoundingClientRect();
+      const previewWidth = manualPreview.offsetWidth;
+      const previewHeight = manualPreview.offsetHeight;
+      const edgeX = Math.min(16, Math.max(0, (window.innerWidth - previewWidth) / 2));
+      const edgeY = Math.min(16, Math.max(0, (window.innerHeight - previewHeight) / 2));
+      let left = triggerRect.right + 14;
+      if (left + previewWidth > window.innerWidth - edgeX) left = triggerRect.left - previewWidth - 14;
+      left = Math.max(edgeX, Math.min(left, window.innerWidth - previewWidth - edgeX));
+      const top = Math.max(edgeY, Math.min(triggerRect.top - 72, window.innerHeight - previewHeight - edgeY));
+      manualPreview.style.left = `${Math.round(left)}px`;
+      manualPreview.style.top = `${Math.round(top)}px`;
+    }
+
+    function clampManualPreviewPosition() {
+      if (manualPreview.hidden) return;
+      const rect = manualPreview.getBoundingClientRect();
+      const edgeX = Math.min(16, Math.max(0, (window.innerWidth - rect.width) / 2));
+      const edgeY = Math.min(16, Math.max(0, (window.innerHeight - rect.height) / 2));
+      const left = Math.max(edgeX, Math.min(rect.left, window.innerWidth - rect.width - edgeX));
+      const top = Math.max(edgeY, Math.min(rect.top, window.innerHeight - rect.height - edgeY));
+      manualPreview.style.left = `${Math.round(left)}px`;
+      manualPreview.style.top = `${Math.round(top)}px`;
+    }
+
+    function resizeManualPreview(width, height) {
+      const rect = manualPreview.getBoundingClientRect();
+      const minimumWidth = Math.min(420, window.innerWidth - 32);
+      const minimumHeight = Math.min(320, window.innerHeight - 32);
+      const maximumWidth = Math.max(minimumWidth, window.innerWidth - rect.left - 16);
+      const maximumHeight = Math.max(minimumHeight, window.innerHeight - rect.top - 16);
+      manualPreview.style.width = `${Math.round(Math.max(minimumWidth, Math.min(width, maximumWidth)))}px`;
+      manualPreview.style.height = `${Math.round(Math.max(minimumHeight, Math.min(height, maximumHeight)))}px`;
+    }
+
+    function scheduleManualPreviewHide() {
+      if (manualPinned) return;
+      clearTimeout(manualHideTimer);
+      manualHideTimer = setTimeout(() => hideManualPreview(), 420);
+    }
+
+    function hideManualPreview(force = false) {
+      if (manualPinned && !force) return;
+      clearTimeout(manualHideTimer);
+      manualPreview.hidden = true;
+      manualPreview.classList.remove("pinned");
+      manualPinned = false;
+      activeManualTrigger = null;
+      activeManualId = null;
+      manualPositionLocked = false;
+    }
+
+    function openWorkflow(row) {
+      const id = row.dataset.article;
+      const url = ARTICLE_LINKS[id];
+      if (!url) {
+        showToast("This Confluence workflow link has not been added yet.");
+        return;
+      }
+      window.open(url, "_blank", "noopener");
+    }
+
+    function beePerch() {
+      const bounds = scene.getBoundingClientRect();
+      return { x: Math.min(34, bounds.width - 36), y: 28 };
+    }
+
+    function setBeeTarget(x, y, following) {
+      if (!beeMotionAllowed.matches) return;
+      const bounds = scene.getBoundingClientRect();
+      beeTargetX = Math.max(18, Math.min(x, bounds.width - 36));
+      beeTargetY = Math.max(26, Math.min(y, bounds.height - 34));
+      beeFollowing = following;
+      beeFlight.classList.toggle("resting", !following);
+      if (!beeInitialized) {
+        beeX = beeTargetX;
+        beeY = beeTargetY;
+        lastTrailX = beeX;
+        lastTrailY = beeY;
+        beeInitialized = true;
+      }
+      if (!beeFrame) beeFrame = requestAnimationFrame(animateBee);
+    }
+
+    function parkBee() {
+      if (!beeInitialized) {
+        const perch = beePerch();
+        setBeeTarget(perch.x, perch.y, false);
+        return;
+      }
+      setBeeTarget(beeX, beeY, false);
+    }
+
+    function addBeeTrail(now) {
+      const distance = Math.hypot(beeX - lastTrailX, beeY - lastTrailY);
+      if (!beeFollowing || now - lastTrailTime < 46 || distance < 7) return;
+      const dot = document.createElement("span");
+      dot.className = "bee-trail-dot";
+      dot.style.left = `${beeX + 4}px`;
+      dot.style.top = `${beeY + 13}px`;
+      dot.style.setProperty("--trail-size", `${3 + Math.round(Math.random() * 2)}px`);
+      scene.insertBefore(dot, beeFlight);
+      dot.addEventListener("animationend", () => dot.remove(), { once: true });
+      lastTrailTime = now;
+      lastTrailX = beeX;
+      lastTrailY = beeY;
+    }
+
+    function animateBee(now) {
+      const dx = beeTargetX - beeX;
+      const dy = beeTargetY - beeY;
+      const previousBeeX = beeX;
+      beeX += dx * .095;
+      beeY += dy * .095;
+      const horizontalTravel = beeX - previousBeeX;
+      if (Math.abs(horizontalTravel) > .18) beeFacing = horizontalTravel < 0 ? -1 : 1;
+      const speed = Math.hypot(dx, dy);
+      if (speed > .35) {
+        const desiredAngle = Math.max(-24, Math.min(24, Math.atan2(dy, Math.abs(dx) || 1) * 24));
+        beeAngle += (desiredAngle - beeAngle) * .12;
+      } else {
+        beeAngle *= .88;
+      }
+      beeFlight.style.transform = `translate3d(${beeX.toFixed(1)}px, ${beeY.toFixed(1)}px, 0) rotate(${beeAngle.toFixed(1)}deg) scaleX(${beeFacing})`;
+      addBeeTrail(now);
+      if (speed > .35) beeFrame = requestAnimationFrame(animateBee);
+      else beeFrame = null;
+    }
+
+    function pointerIsOverWorkSurface(target) {
+      return target instanceof Element && Boolean(target.closest(".waypoints, .hero, .drawer, .manual-popover"));
+    }
+
+    scene.addEventListener("pointerleave", event => {
+      if (manualPreview.contains(event.relatedTarget)) return;
+      const hadCategoryPreview = Boolean(previewCategoryId);
+      previewCategoryId = null;
+      if (hadCategoryPreview) render();
+    });
+
+    document.addEventListener("pointermove", event => {
+      if (event.pointerType === "touch" || !beeMotionAllowed.matches) return;
+      const bounds = scene.getBoundingClientRect();
+      const insideScene = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+      if (!insideScene || pointerIsOverWorkSurface(event.target)) {
+        parkBee();
+        return;
+      }
+      setBeeTarget(event.clientX - bounds.left + 24, event.clientY - bounds.top - 18, true);
+    }, { passive: true });
+
+    window.addEventListener("blur", parkBee);
+
+    waypoints.addEventListener("pointerover", event => {
+      const button = event.target.closest("[data-category]");
+      if (!button || button.contains(event.relatedTarget)) return;
+      selectCategory(button.dataset.category);
+    });
+
+    waypoints.addEventListener("focusin", event => {
+      const button = event.target.closest("[data-category]");
+      if (button) selectCategory(button.dataset.category);
+    });
+
+    waypoints.addEventListener("click", event => {
+      const button = event.target.closest("[data-category]");
+      if (button) selectCategory(button.dataset.category);
+    });
+
+    waypoints.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      const buttons = [...waypoints.querySelectorAll("[data-category]")];
+      const currentIndex = buttons.indexOf(document.activeElement);
+      let nextIndex = currentIndex;
+      if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % buttons.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = buttons.length - 1;
+      event.preventDefault();
+      const nextId = buttons[nextIndex].dataset.category;
+      selectCategory(nextId);
+      waypoints.querySelector(`[data-category="${nextId}"]`)?.focus();
+    });
+
+    drawer.addEventListener("click", event => {
+      const manual = event.target.closest("[data-manual]");
+      if (manual) {
+        event.stopPropagation();
+        if (manualPinned && activeManualTrigger === manual) {
+          hideManualPreview(true);
+        } else {
+          if (manualPinned) hideManualPreview(true);
+          showManualPreview(manual);
+          manualPinned = true;
+          manualPreview.classList.add("pinned");
+        }
+        return;
+      }
+      const row = event.target.closest("[data-row]");
+      if (row) openWorkflow(row);
+    });
+
+    drawer.addEventListener("keydown", event => {
+      if (event.target.closest("[data-manual]")) return;
+      const row = event.target.closest("[data-row]");
+      if (!row) return;
+      const rows = [...drawer.querySelectorAll("[data-row]")];
+      const currentIndex = rows.indexOf(row);
+      let nextIndex = currentIndex;
+      if (event.key === "ArrowDown") nextIndex = Math.min(currentIndex + 1, rows.length - 1);
+      if (event.key === "ArrowUp") nextIndex = Math.max(currentIndex - 1, 0);
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = rows.length - 1;
+      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        rows[nextIndex].focus();
+        rows[nextIndex].scrollIntoView({ block: "nearest" });
+        return;
+      }
+      if (['Enter', ' '].includes(event.key)) {
+        event.preventDefault();
+        openWorkflow(row);
+      }
+    });
+
+    drawer.addEventListener("pointerover", event => {
+      const manual = event.target.closest("[data-manual]");
+      if (manual) showManualPreview(manual);
+    });
+
+    drawer.addEventListener("pointerout", event => {
+      const manual = event.target.closest("[data-manual]");
+      if (manual && !manual.contains(event.relatedTarget) && !manualPreview.contains(event.relatedTarget)) scheduleManualPreviewHide();
+    });
+
+    drawer.addEventListener("focusin", event => {
+      const manual = event.target.closest("[data-manual]");
+      if (manual) showManualPreview(manual);
+    });
+
+    drawer.addEventListener("focusout", event => {
+      const manual = event.target.closest("[data-manual]");
+      if (manual && !manual.contains(event.relatedTarget) && !manualPreview.contains(event.relatedTarget)) scheduleManualPreviewHide();
+    });
+
+    drawer.addEventListener("scroll", () => {
+      if (activeManualTrigger) positionManualPreview(activeManualTrigger);
+    }, { passive: true });
+
+    manualPreview.addEventListener("pointerenter", () => clearTimeout(manualHideTimer));
+    manualPreview.addEventListener("pointerleave", scheduleManualPreviewHide);
+    manualPreview.addEventListener("focusin", () => clearTimeout(manualHideTimer));
+    manualPreview.addEventListener("focusout", event => {
+      if (!manualPreview.contains(event.relatedTarget)) scheduleManualPreviewHide();
+    });
+    manualPreviewClose.addEventListener("click", () => hideManualPreview(true));
+    manualPreview.addEventListener("click", event => {
+      const zoomControl = event.target.closest("[data-manual-zoom]");
+      if (zoomControl) {
+        manualZoom += Number(zoomControl.dataset.manualZoom);
+        applyManualZoom();
+      }
+    });
+    manualZoomReset.addEventListener("click", () => {
+      manualZoom = 1;
+      applyManualZoom();
+    });
+
+    manualDragHandle.addEventListener("pointerdown", event => {
+      if (window.innerWidth <= 760 || event.button !== 0) return;
+      clearTimeout(manualHideTimer);
+      manualPinned = true;
+      manualPositionLocked = true;
+      manualPreview.classList.add("pinned");
+      const rect = manualPreview.getBoundingClientRect();
+      manualDragState = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
+      manualDragHandle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    manualDragHandle.addEventListener("pointermove", event => {
+      if (!manualDragState) return;
+      const rect = manualPreview.getBoundingClientRect();
+      const edgeX = Math.min(16, Math.max(0, (window.innerWidth - rect.width) / 2));
+      const edgeY = Math.min(16, Math.max(0, (window.innerHeight - rect.height) / 2));
+      const proposedLeft = manualDragState.left + event.clientX - manualDragState.x;
+      const proposedTop = manualDragState.top + event.clientY - manualDragState.y;
+      const left = Math.max(edgeX, Math.min(proposedLeft, window.innerWidth - rect.width - edgeX));
+      const top = Math.max(edgeY, Math.min(proposedTop, window.innerHeight - rect.height - edgeY));
+      manualPreview.style.left = `${Math.round(left)}px`;
+      manualPreview.style.top = `${Math.round(top)}px`;
+    });
+
+    manualDragHandle.addEventListener("pointerup", event => {
+      if (!manualDragState) return;
+      manualDragState = null;
+      manualDragHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualDragHandle.addEventListener("keydown", event => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const rect = manualPreview.getBoundingClientRect();
+      const step = event.shiftKey ? 50 : 20;
+      manualPinned = true;
+      manualPositionLocked = true;
+      manualPreview.classList.add("pinned");
+      manualPreview.style.left = `${Math.round(rect.left + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0))}px`;
+      manualPreview.style.top = `${Math.round(rect.top + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0))}px`;
+      clampManualPreviewPosition();
+      event.preventDefault();
+    });
+
+    manualResizeHandle.addEventListener("pointerdown", event => {
+      if (event.pointerType === "touch") return;
+      clearTimeout(manualHideTimer);
+      manualPinned = true;
+      manualPositionLocked = true;
+      manualPreview.classList.add("pinned");
+      const rect = manualPreview.getBoundingClientRect();
+      manualResizeState = { x: event.clientX, y: event.clientY, width: rect.width, height: rect.height };
+      manualResizeHandle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    manualResizeHandle.addEventListener("pointermove", event => {
+      if (!manualResizeState) return;
+      resizeManualPreview(
+        manualResizeState.width + event.clientX - manualResizeState.x,
+        manualResizeState.height + event.clientY - manualResizeState.y
+      );
+    });
+
+    manualResizeHandle.addEventListener("pointerup", event => {
+      if (!manualResizeState) return;
+      manualResizeState = null;
+      manualResizeHandle.releasePointerCapture(event.pointerId);
+    });
+
+    manualResizeHandle.addEventListener("keydown", event => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const rect = manualPreview.getBoundingClientRect();
+      const step = event.shiftKey ? 50 : 20;
+      const width = rect.width + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0);
+      const height = rect.height + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0);
+      resizeManualPreview(width, height);
+      event.preventDefault();
+    });
+
+    search.addEventListener("input", () => {
+      previewCategoryId = null;
+      render();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "/" && document.activeElement !== search) {
+        event.preventDefault();
+        search.focus();
+      }
+      if (event.key === "Escape" && !manualPreview.hidden) {
+        hideManualPreview(true);
+        return;
+      }
+      if (event.key === "Escape" && (search.value || pinnedCategoryId || previewCategoryId)) closeDrawer();
+    });
+
+    window.addEventListener("hashchange", () => {
+      pinnedCategoryId = validHash();
+      previewCategoryId = null;
+      render();
+    });
+
+    window.addEventListener("resize", () => {
+      if (activeManualTrigger) positionManualPreview(activeManualTrigger);
+      if (!beeFollowing) parkBee();
+    });
+
+    render();
+    parkBee();
+  </script>
+</body>
+</html>
