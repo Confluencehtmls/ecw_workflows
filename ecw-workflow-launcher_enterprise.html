@@ -124,7 +124,7 @@
     .waypoints {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 4px;
+      gap: 0;
       width: min(1500px, 100%);
       margin: 0 auto;
       padding: 0;
@@ -146,13 +146,13 @@
     .waypoint + .waypoint::before {
       content: "";
       position: absolute;
-      top: 14px;
-      bottom: 14px;
-      left: -2px;
+      top: 50%;
+      left: 0;
       width: 1px;
+      height: 28px;
       background: #d8d8d4;
+      transform: translateY(-50%);
     }
-    .waypoint.active::before, .waypoint:hover::before, .waypoint:has(+ .waypoint.active)::before, .waypoint:has(+ .waypoint:hover)::before { display: none; }
     .waypoint:hover {
       background: #fff1ad;
       color: #000;
@@ -409,6 +409,8 @@
       .workspace { padding-top: 66px; }
       .hero { top: 12px; right: 14px; width: min(380px, calc(100% - 28px)); }
       .waypoints { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .waypoint:nth-child(odd)::before { display: none; }
+      .waypoint:nth-child(even)::before { display: block; }
       .drawer { max-height: none; }
       .index-head,
       .index-row { grid-template-columns: minmax(250px, .85fr) minmax(300px, 1.15fr) 124px; gap: 18px; }
