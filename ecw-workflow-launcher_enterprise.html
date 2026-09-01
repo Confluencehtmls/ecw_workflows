@@ -515,7 +515,8 @@
       patientInformation: "",
       guarantor: "",
       updatedPatients: "",
-      demographicValues: ""
+      demographicValues: "",
+      documents: ""
     };
 
     /*
@@ -531,7 +532,7 @@
       },
     */
     const MANUAL_REFERENCES = {
-      appointmentSearch: { preview: "./GetAppts_quick.png", pdf: "" },
+          appointmentSearch: { preview: "./GetAppts_quick.png", pdf: "" },
       appointmentDetails: { preview: "./GetAppt_quick.png", pdf: "" },
       appointmentAvailability: { preview: "./GetSlots_quick.png", pdf: "" },
       appointmentScheduleEdit: { preview: "./EditAppt_quick.png", pdf: "" },
@@ -549,7 +550,8 @@
       patientInformation: { preview: "./GetPatient_quick.png", pdf: "" },
       guarantor: { preview: "./GetGuarantor_quick.png", pdf: "" },
       updatedPatients: { preview: "./UpdatedPatients_quick.png", pdf: "" },
-      demographicValues: { preview: "./Demographics_quick.png", pdf: "" }
+      demographicValues: { preview: "./Demographics_quick.png", pdf: "" },
+      documents: { preview: "./Documents_quick.png", pdf: "" }
     };
 
     const categories = [
@@ -593,7 +595,7 @@
       },
       {
         id: "demographics",
-        label: "Demographics",
+        label: "Demographics / Documents",
         shortPath: "Patient Information",
         path: "eCW: Patient Hub > Patient Information",
         links: [
@@ -601,7 +603,8 @@
           ["patientInformation", "GetPatient", "Patient Information window", "Demographics, identifiers, contacts, and profile fields."],
           ["guarantor", "GetGuarantor", "Guarantor information", "Guarantor identity, relationship, and contact fields."],
           ["updatedPatients", "BeginGetUpdatedPatients / NextGetUpdatedPatients", "Updated patient search", "Update window and result paging."],
-          ["demographicValues", "GetEthnicities / GetGenderIdentities / GetLanguages / GetMaritalStatuses / GetRaces / GetRelationships / GetSexualOrientations", "Demographic reference values", "Dropdown values shown in Patient Information."]
+          ["demographicValues", "GetEthnicities / GetGenderIdentities / GetLanguages / GetMaritalStatuses / GetRaces / GetRelationships / GetSexualOrientations", "Demographic reference values", "Dropdown values shown in Patient Information."],
+          ["documents", "CreateDocument / GetDocumentTypes / GetDocument / GetPatientDocuments", "Documents", "Upload documents and retrieve patient document types and files."]
         ]
       }
     ];
